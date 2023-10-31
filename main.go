@@ -25,6 +25,7 @@ func main() {
 	routes.UserRoutes(router)
 	router.Use(middleware.Authentication())
 
+	router.POST("/admin/addproduct", controllers.ProductViewAdmin())
 	router.GET("/addtocart", app.AddToCart())
 	router.GET("removeitem", app.RemoveItem())
 	router.GET("/cartcheckout", app.BuyFromCart())
