@@ -39,7 +39,7 @@ func VerifyPassword(userPassword, givenPassword string) bool {
 	return false
 }
 
-func Signup() gin.HandlerFunc {
+func SignUp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
