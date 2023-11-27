@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -86,7 +87,7 @@ func SignUp() gin.HandlerFunc {
 		user.ID = primitive.NewObjectID()
 		user.User_ID = user.ID.Hex()
 
-		token, refreshToken, err := tokens.GenerateAllTokens(*user.Email, *user.First_Name, *user.Last_Name, *user.User_Type, *&user.User_ID)
+		token, refreshToken, err := tokens.GenerateAllTokens(*user.Email, *user.First_Name, *user.Last_Name, *user.User_Type, user.User_ID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
 			return
@@ -94,6 +95,8 @@ func SignUp() gin.HandlerFunc {
 
 		user.Token = &token
 		user.Refresh_Token = &refreshToken
+		user.UserCart = make([]models.Product, 0)
+		user.Order_Status = make([]models.Order, 0)
 
 		result, err := UserCollection.InsertOne(ctx, user)
 		if err != nil {
@@ -102,7 +105,7 @@ func SignUp() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, result)
+		c.JSON(http.StatusCreated, result)
 		return
 
 	}
@@ -139,13 +142,13 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		token, refreshToken, err := tokens.GenerateAllTokens(*user.Email, *user.First_Name, *user.Last_Name, *user.User_Type, *&user.User_ID)
+		token, refreshToken, err := tokens.GenerateAllTokens(*user.Email, *user.First_Name, *user.Last_Name, *user.User_Type, user.User_ID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
 			return
 		}
 
-		err = tokens.UpdateTokens(token, refreshToken, *&foundUser.User_ID)
+		err = tokens.UpdateTokens(token, refreshToken, foundUser.User_ID)
 		err = UserCollection.FindOne(ctx, bson.M{"user_id": foundUser.User_ID}).Decode(&foundUser)
 
 		if err != nil {
@@ -153,7 +156,6 @@ func Login() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, foundUser)
-
 	}
 }
 
@@ -163,15 +165,84 @@ func ProductViewAdmin() gin.HandlerFunc {
 		defer cancel()
 
 		var product models.Product
-		c.BindJSON(&product)
+		err := c.BindJSON(&product)
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err})
+			return
+		}
 
+		product.ProductId = primitive.NewObjectID()
+		result, err := ProductCollection.InsertOne(ctx, product)
+		if err != nil {
+			log.Panic(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "product not added."})
+			return
+		}
+		c.IndentedJSON(200, result)
+		return
 	}
 }
 
 func SearchProduct() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
+		var products []models.Product
+
+		cursor, err := ProductCollection.Find(ctx, bson.D{{}})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "something went wrong. Please try after some time.")
+			return
+		}
+
+		if err = cursor.All(ctx, &products); err != nil {
+			log.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		defer cursor.Close(ctx)
+		if err = cursor.Err(); err != nil {
+			log.Println(err)
+			c.JSON(400, "invalid")
+			return
+		}
+
+		c.JSON(200, products)
+	}
 }
 
 func SearchProductByQuery() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
+		queryParam := c.Query("productID")
+		if queryParam == "" {
+			log.Println("product id is empty")
+			c.AbortWithError(http.StatusBadRequest, errors.New("productID not found"))
+			return
+		}
+
+		var products []models.Product
+		cursor, err := ProductCollection.Find(ctx, bson.M{"name": bson.M{"$regex": queryParam}})
+		if err != nil {
+			c.JSON(http.StatusNotFound, "cannot find requested resource")
+			return
+		}
+
+		if err = cursor.All(ctx, &products); err != nil {
+			log.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+
+		defer cursor.Close(ctx)
+		if err = cursor.Err(); err != nil {
+			log.Println(err)
+			c.JSON(400, "invalid")
+			return
+		}
+		c.JSON(200, products)
+		return
+	}
 }
