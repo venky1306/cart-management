@@ -19,8 +19,8 @@ type User struct {
 	Created_At      time.Time          `json:"created_at"`
 	Updated_At      time.Time          `json:"updtaed_at"`
 	User_ID         string             `json:"user_id"`
-	UserCart        []ProductUser      `json:"usercart" bson:"usercart"`
-	Address_Details []Address          `json:"address" bson:"address"`
+	UserCart        []Product          `json:"usercart" bson:"usercart"`
+	Address_Details Address            `json:"address" bson:"address"`
 	Order_Status    []Order            `json:"orders" bson:"orders"`
 }
 
@@ -30,14 +30,6 @@ type Product struct {
 	Price        *uint64            `json:"price"`
 	Rating       *uint8             `json:"rating"`
 	Image        *string            `json:"image"`
-}
-
-type ProductUser struct {
-	ProductId    primitive.ObjectID `bson:"_id"`
-	Product_Name *string            `json:"product_name" bson:"product_name"`
-	Price        *uint64            `json:"price"  bson:"price"`
-	Rating       *uint8             `json:"rating" bson:"rating"`
-	Image        *string            `json:"image"  bson:"image"`
 }
 
 type Address struct {
@@ -51,7 +43,7 @@ type Address struct {
 
 type Order struct {
 	Order_ID       primitive.ObjectID `bson:"_id"`
-	Order_Cart     []ProductUser      `json:"usercart" bson:"usercart"`
+	Order_Cart     []Product          `json:"usercart" bson:"usercart"`
 	Ordered_At     time.Time          `json:"ordered_at" bson:"ordered_at"`
 	Ordered_To     Address            `json:"ordered_to" bson:"ordered_to"`
 	Price          int                `json:"price" bson:"price"`
