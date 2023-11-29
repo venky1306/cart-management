@@ -1,15 +1,20 @@
 package tokens
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/venky1306/cart-management/database"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
+
+var UserCollection = database.UserData(database.Client, "users")
 
 type Claims struct {
 	Email      string
@@ -52,8 +57,16 @@ func GenerateAllTokens(email, firstname, lastname, usertype, userid string) (str
 	return token, refreshToken, nil
 }
 
-func UpdateTokens() error {
-
+func UpdateTokens(token, refresh_token, userid string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*100)
+	defer cancel()
+	updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	_, err := UserCollection.UpdateOne(ctx, bson.M{"user_id": userid}, bson.D{{"$set", bson.D{{"updated_at", updated_at}, {"token", token}, {"refresh_token", refresh_token}}}})
+	if err != nil {
+		log.Panic(err)
+		return err
+	}
+	return nil
 }
 
 func ValidateToken(tokenString string) (claims *Claims, msg string) {
@@ -73,5 +86,5 @@ func ValidateToken(tokenString string) (claims *Claims, msg string) {
 		msg = fmt.Sprint("token is expired")
 		return
 	}
-	return claims, msg
+	return
 }
