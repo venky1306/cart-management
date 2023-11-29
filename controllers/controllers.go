@@ -2,12 +2,12 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/venky1306/cart-management/authorization"
 	"github.com/venky1306/cart-management/database"
 	"github.com/venky1306/cart-management/models"
 	"github.com/venky1306/cart-management/tokens"
@@ -34,7 +34,7 @@ func HashPassowd(password string) string {
 }
 
 func VerifyPassword(userPassword, givenPassword string) bool {
-	if bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(givenPassword)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(givenPassword), []byte(userPassword)) != nil {
 		return true
 	}
 	return false
@@ -66,6 +66,7 @@ func SignUp() gin.HandlerFunc {
 
 		if count > 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+			return
 		}
 
 		count, err = UserCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
@@ -77,6 +78,7 @@ func SignUp() gin.HandlerFunc {
 
 		if count > 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+			return
 		}
 
 		password := HashPassowd(*user.Password)
@@ -135,20 +137,24 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found"})
 			return
 		}
-
+		// log.Println(*foundUser.Password, *user.Password)
 		isValid := VerifyPassword(*foundUser.Password, *user.Password)
 		if !isValid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "wrong password"})
 			return
 		}
 
-		token, refreshToken, err := tokens.GenerateAllTokens(*user.Email, *user.First_Name, *user.Last_Name, *user.User_Type, user.User_ID)
+		token, refreshToken, err := tokens.GenerateAllTokens(*foundUser.Email, *foundUser.First_Name, *foundUser.Last_Name, *foundUser.User_Type, foundUser.User_ID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
 			return
 		}
 
 		err = tokens.UpdateTokens(token, refreshToken, foundUser.User_ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			return
+		}
 		err = UserCollection.FindOne(ctx, bson.M{"user_id": foundUser.User_ID}).Decode(&foundUser)
 
 		if err != nil {
@@ -161,13 +167,18 @@ func Login() gin.HandlerFunc {
 
 func ProductViewAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// log.Println("middleware works")
+		if err := authorization.IsAdmin(c); err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, err)
+			return
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
 		var product models.Product
 		err := c.BindJSON(&product)
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err})
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Unable to bind the product info."})
 			return
 		}
 
@@ -217,10 +228,10 @@ func SearchProductByQuery() gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
-		queryParam := c.Query("productID")
+		queryParam := c.Query("productid")
 		if queryParam == "" {
 			log.Println("product id is empty")
-			c.AbortWithError(http.StatusBadRequest, errors.New("productID not found"))
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "productid param missing"})
 			return
 		}
 
@@ -234,6 +245,7 @@ func SearchProductByQuery() gin.HandlerFunc {
 		if err = cursor.All(ctx, &products); err != nil {
 			log.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
+			return
 		}
 
 		defer cursor.Close(ctx)
