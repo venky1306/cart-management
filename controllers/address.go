@@ -18,6 +18,7 @@ func EditAddress() gin.HandlerFunc {
 		userid := c.Query("userID")
 		if userid != "" {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "userID missing"})
+			return
 		}
 
 		var addr models.Address
