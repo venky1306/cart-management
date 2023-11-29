@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/venky1306/cart-management/authorization"
 	"github.com/venky1306/cart-management/database"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -38,6 +39,11 @@ func (app *Application) AddToCart() gin.HandlerFunc {
 		if userQueryID == "" {
 			log.Println("user id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("user id is missing"))
+			return
+		}
+
+		if err := authorization.AccessUserToUid(c, userQueryID); err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, err)
 			return
 		}
 
@@ -76,6 +82,11 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 			return
 		}
 
+		if err := authorization.AccessUserToUid(c, userQueryID); err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, err)
+			return
+		}
+
 		productID, err := primitive.ObjectIDFromHex(productQueryID)
 		if err != nil {
 			log.Println(err)
@@ -101,8 +112,13 @@ func (app *Application) BuyFromCart() gin.HandlerFunc {
 		if userQueryID == "" {
 			log.Panicln("userid is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("userid is empty"))
+			return
 		}
 
+		if err := authorization.AccessUserToUid(c, userQueryID); err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, err)
+			return
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
@@ -130,6 +146,11 @@ func (app *Application) InstantBuy() gin.HandlerFunc {
 		if userQueryID == "" {
 			log.Println("user id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("user id is missing"))
+			return
+		}
+
+		if err := authorization.AccessUserToUid(c, userQueryID); err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, err)
 			return
 		}
 
