@@ -32,16 +32,16 @@ func AddProductToCart(ctx context.Context, productCollection, userCollection *mo
 		return ErrCantFindProduct
 	}
 
-	filter = bson.M{"_id": userID}
+	filter = bson.M{"user_id": userID}
 	err = userCollection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
-		return err
+		return ErrUserIdNotValid
 	}
 
 	update := bson.M{"$push": bson.M{"usercart": product}}
 	_, err = userCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return ErrCantFindProduct
+		return err
 	}
 
 	return nil
@@ -98,11 +98,14 @@ func InstantBuy(ctx context.Context, productCollection, userCollection *mongo.Co
 	order.Price = int(*product.Price)
 
 	var user models.User
-	userCollection.FindOne(ctx, bson.M{"userid": userID}).Decode(&user)
+	userCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&user)
 	order.Ordered_To = user.Address_Details
 	user.Updated_At, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	// log.Println(user.Order_Status)
+	// log.Println("************************")
 	user.Order_Status = append(user.Order_Status, order)
-	_, err = userCollection.UpdateOne(ctx, bson.M{"userid": userID}, bson.D{{"$set", bson.D{{"updated_at", user.Updated_At}, {"orders", user.Order_Status}}}})
+	// log.Println(user.Order_Status)
+	_, err = userCollection.UpdateOne(ctx, bson.M{"user_id": userID}, bson.D{{"$set", bson.D{{"updated_at", user.Updated_At}, {"orders", user.Order_Status}}}})
 	if err != nil {
 		return ErrCantUpdateUser
 	}
