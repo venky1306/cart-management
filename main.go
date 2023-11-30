@@ -17,7 +17,7 @@ func main() {
 		port = "8000"
 	}
 
-	app := controllers.NewApplication(database.ProductData(database.Client, "Products"), database.UserData(database.Client, "Users"))
+	app := controllers.NewApplication(database.ProductData(database.Client, "products"), database.UserData(database.Client, "users"))
 
 	router := gin.New()
 	router.Use(gin.Logger())
@@ -25,11 +25,11 @@ func main() {
 	routes.UserRoutes(router)
 	router.Use(middleware.Authentication())
 
-	router.POST("/products/addproduct", controllers.ProductViewAdmin())
-	router.GET("/addtocart", app.AddToCart())
-	router.GET("/removeitem", app.RemoveItem())
-	router.GET("/cartcheckout", app.BuyFromCart())
-	router.GET("/instantbuy", app.InstantBuy())
+	router.POST("/v1/products/addproduct", controllers.ProductViewAdmin())
+	router.GET("/v1/addtocart", app.AddToCart())
+	router.GET("/v1/removeitem", app.RemoveItem())
+	router.GET("/v1/checkout", app.BuyFromCart())
+	router.GET("/v1/instantbuy", app.InstantBuy())
 
 	log.Fatal(router.Run(":" + port))
 }
