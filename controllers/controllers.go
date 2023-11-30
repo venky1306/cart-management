@@ -50,10 +50,11 @@ func SignUp() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
+		// fmt.Println("binding works")
 
 		validationErr := validate.Struct(user)
 		if validationErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "validation failed"})
 			return
 		}
 
@@ -63,9 +64,9 @@ func SignUp() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
+		// fmt.Println("email check passed")
 		if count > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "email already exists"})
 			return
 		}
 
@@ -77,7 +78,7 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		if count > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "phone already exists"})
 			return
 		}
 
@@ -123,7 +124,7 @@ func Login() gin.HandlerFunc {
 		var foundUser models.User
 
 		if err := c.BindJSON(&user); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -169,7 +170,7 @@ func ProductViewAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// log.Println("middleware works")
 		if err := authorization.IsAdmin(c); err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, err)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
