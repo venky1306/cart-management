@@ -28,14 +28,14 @@ func NewApplication(productCollection, userCollection *mongo.Collection) *Applic
 
 func (app *Application) AddToCart() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		productQueryID := c.Query("ProductID")
+		productQueryID := c.Query("productId")
 		if productQueryID == "" {
 			log.Println("product id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("product id is missing"))
 			return
 		}
 
-		userQueryID := c.Query("UserID")
+		userQueryID := c.Query("userId")
 		if userQueryID == "" {
 			log.Println("user id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("user id is missing"))
@@ -43,7 +43,7 @@ func (app *Application) AddToCart() gin.HandlerFunc {
 		}
 
 		if err := authorization.AccessUserToUid(c, userQueryID); err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, err)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())
 			return
 		}
 
@@ -59,7 +59,8 @@ func (app *Application) AddToCart() gin.HandlerFunc {
 
 		err = database.AddProductToCart(ctx, app.productCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err)
+			log.Println("error adding to cart")
+			c.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
 		c.JSON(200, "Successfully added to Cart")
@@ -68,14 +69,14 @@ func (app *Application) AddToCart() gin.HandlerFunc {
 
 func (app *Application) RemoveItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		productQueryID := c.Query("ProductID")
+		productQueryID := c.Query("productId")
 		if productQueryID == "" {
 			log.Println("product id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("product id is missing"))
 			return
 		}
 
-		userQueryID := c.Query("UserID")
+		userQueryID := c.Query("userId")
 		if userQueryID == "" {
 			log.Println("user id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("user id is missing"))
@@ -83,7 +84,7 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 		}
 
 		if err := authorization.AccessUserToUid(c, userQueryID); err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, err)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())
 			return
 		}
 
@@ -99,16 +100,16 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 
 		err = database.RemoveCartItem(ctx, app.productCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err)
+			c.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
-		c.JSON(200, "Successfully added to Cart")
+		c.JSON(200, "Successfully updated Cart")
 	}
 }
 
 func (app *Application) BuyFromCart() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userQueryID := c.Query("UserID")
+		userQueryID := c.Query("userId")
 		if userQueryID == "" {
 			log.Panicln("userid is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("userid is empty"))
@@ -135,14 +136,14 @@ func (app *Application) BuyFromCart() gin.HandlerFunc {
 
 func (app *Application) InstantBuy() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		productQueryID := c.Query("ProductID")
+		productQueryID := c.Query("productId")
 		if productQueryID == "" {
 			log.Println("product id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("product id is missing"))
 			return
 		}
 
-		userQueryID := c.Query("UserID")
+		userQueryID := c.Query("userId")
 		if userQueryID == "" {
 			log.Println("user id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("user id is missing"))
