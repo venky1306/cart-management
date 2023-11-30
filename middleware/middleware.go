@@ -11,7 +11,7 @@ func Authentication() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientToken := c.GetHeader("token")
 		if clientToken == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authorization token missng."})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication token missng."})
 			return
 		}
 
