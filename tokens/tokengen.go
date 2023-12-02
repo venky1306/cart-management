@@ -27,6 +27,10 @@ type Claims struct {
 
 func GenerateAllTokens(email, firstname, lastname, usertype, userid string) (string, string, error) {
 
+	if SECRET_KEY == "" {
+		log.Println("WARNING!!!. env variable SECRET_KEY not set.")
+	}
+
 	claims := Claims{
 		Email:      email,
 		First_Name: firstname,
@@ -70,6 +74,10 @@ func UpdateTokens(token, refresh_token, userid string) error {
 }
 
 func ValidateToken(tokenString string) (claims *Claims, msg string) {
+	if SECRET_KEY == "" {
+		log.Println("WARNING!!!. env variable 'SECRET_KEY' not set.")
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) { return []byte(SECRET_KEY), nil })
 	if err != nil {
 		msg = err.Error()
