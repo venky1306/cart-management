@@ -35,13 +35,15 @@ To run this application locally, follow these steps:
     docker run --name my-mongodb-container -d -p 27017:27017 mongo
     ```
 
-2. **Build and Run the Application**
+2. **Pull the Docker Image**
     ```shell
-    # Build the Docker image
-    docker build -t cart-management .
+    docker pull venkateshwark/cart-management:latest
+    ```
 
+3. **Run the Application**
+    ```shell
     # Run the Docker container
-    docker run --name goserver --publish 8001:8000 --env MONGODB_URL="mongodb://<YOUR_MONGODB_IP>:27017/" --env SECRET_KEY="<YOUR_SECRET_KEY>"cart-management
+    docker run --name goserver --publish 8001:8000 --env MONGODB_URL="mongodb://<YOUR_MONGODB_IP>:27017/" --env SECRET_KEY="<YOUR_SECRET_KEY>" cart-management
     ```
     Replace `<YOUR_MONGODB_IP>` with your MongoDB server's container IP address.
     Replace `<YOUR_SECRET_KEY>` with your JWT SECRET.
@@ -53,3 +55,4 @@ To run this application locally, follow these steps:
 - **github.com/gin-gonic/gin**: Gin framework for building web applications in Go.
 - **go.mongodb.org/mongo-driver**: MongoDB driver for Go, enabling interaction with MongoDB.
 - **github.com/golang-jwt/jwt/v5**: JWT implementation for Go, facilitating authentication with JSON Web Tokens.
+
