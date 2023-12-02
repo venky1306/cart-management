@@ -16,7 +16,7 @@ import (
 func DBSet() *mongo.Client {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file. Set env variable 'MONGODB_URL'.")
 	}
 
 	uri := os.Getenv("MONGODB_URL")
